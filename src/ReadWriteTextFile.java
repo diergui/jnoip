@@ -3,7 +3,6 @@
  * and open the template in the editor.
  */
 
-
 import java.io.*;
 import java.util.Scanner;
 
@@ -51,8 +50,8 @@ public final class ReadWriteTextFile {
         }
 
         return text.toString();
-    }    
-    
+    }
+
     public static String read(final File inputFile) throws IOException {
         final StringBuilder text = new StringBuilder();
         final String NL = System.getProperty("line.separator");
@@ -79,4 +78,23 @@ public final class ReadWriteTextFile {
             System.err.println("Err hidding file: " + ex);
         }
     }
+
+    public static String getMyPath() {
+
+        String ret = Main.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+
+        if (!ret.equals("/")) {
+            final String[] splited = ret.split("/");
+
+            ret = "";
+
+            for (int i = 0; i < (splited.length - 1); i++) {
+                ret = ret + splited[i] + "/";
+            }
+
+        }
+
+        return ret;
+    }
+
 }

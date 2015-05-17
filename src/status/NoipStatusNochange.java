@@ -11,17 +11,17 @@ import java.util.Date;
  *
  * @author diego
  */
-public class NoipStatusFailedUpdate  implements INoipStatus {
+public class NoipStatusNochange  implements INoipStatus {
 
-    private Exception error = null;
+    private String ip = null;
     private Date nextUpdate = null;
 
-    public Exception getError() {
-        return error;
+    public String getIp() {
+        return ip;
     }
 
-    public void setError(Exception error) {
-        this.error = error;
+    public void setIp(String ip) {
+        this.ip = ip;
     }
 
     public Date getNextUpdate() {

@@ -12,6 +12,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
 import status.NoipStatusFailedUpdate;
+import status.NoipStatusNochange;
 import status.NoipStatusSuccessfulUpdate;
 
 /**
@@ -119,10 +120,8 @@ public class UpdaterEngine {
 
             } else if (line.startsWith("nochg")) {
 
-                final NoipStatusSuccessfulUpdate status = new NoipStatusSuccessfulUpdate();
+                final NoipStatusNochange status = new NoipStatusNochange();
                 status.setIp(newIP);
-                status.setMessage("No changes.");
-                status.setUpdated(new Date());
                 status.setNextUpdate(new Date(System.currentTimeMillis() + (Configs.updatetime_ok * 60000)));
 
                 listener.setNoipStatus(status);

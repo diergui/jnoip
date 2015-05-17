@@ -9,7 +9,7 @@ package status;
  *
  * @author diego
  */
-public class NoipStatusCurrentIP {
+public class NoipStatusCurrentIP implements INoipStatus {
 
     private String ip = "";
 

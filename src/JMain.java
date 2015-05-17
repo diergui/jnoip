@@ -4,9 +4,6 @@
  * and open the template in the editor.
  */
 
-
-import json.JSONException;
-import json.JSONObject;
 import java.awt.AWTException;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
@@ -15,17 +12,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import status.INoipStatus;
 import status.NoipStatusCurrentIP;
 import status.NoipStatusFailedUpdate;
+import status.NoipStatusNochange;
 import status.NoipStatusSuccessfulUpdate;
 
 /**
@@ -35,6 +30,7 @@ import status.NoipStatusSuccessfulUpdate;
 public class JMain extends javax.swing.JDialog implements INoipStatusListener {
 
     private final JMain thisInstance = this;
+    private INoipStatus lastStatus = null;
 
     public final Timer timerUpdate = new Timer(Configs.updatetime_fail, new ActionListener() {
         @Override
@@ -76,56 +72,20 @@ public class JMain extends javax.swing.JDialog implements INoipStatusListener {
             @Override
             public void run() {
 
-                try {
-                    final File configFile = new File(getMyPath() + "/config.cfg");
-
-                    System.out.println("Config file path: " + configFile);
-
-                    final String fileContent = ReadWriteTextFile.read(configFile);
-
-                    final JSONObject json = new JSONObject(fileContent);
-                    Configs.hostname = json.getString("hostname").trim();
-                    Configs.username = json.getString("username").trim();
-                    Configs.password = json.getString("password").trim();
-                    Configs.updatetime_ok = json.getInt("updatetime_ok");
-                    Configs.updatetime_fail = json.getInt("updatetime_fail");
-
-                    if (Configs.updatetime_ok < 5) {
-                        Configs.updatetime_ok = 5;
-                    }
-
-                    if (Configs.updatetime_ok > 1440) {
-                        Configs.updatetime_ok = 1440;
-                    }
-
-                    if (Configs.updatetime_fail < 0) {
-                        Configs.updatetime_fail = 0;
-                    }
-
-                    if (Configs.updatetime_fail > 1440) {
-                        Configs.updatetime_fail = 1440;
-                    }
-
-                    lblHost.setText(Configs.hostname);
-                    lblIP.setText("");
-                    txtLog.setText("");
-
-                    cmdDoUpdate.setEnabled(true);
-
-                    log("Initialization OK.");
-
-                    checkIt();
-
-                } catch (JSONException ex) {
-                    JOptionPane.showMessageDialog(null, "Invalid configuration file content. " + ex);
-                    System.exit(1);
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(null, "Configuration file not found.");
-                    System.exit(1);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, "Error: " + ex);
+                if (Configs.criticalError != null) {
+                    JOptionPane.showMessageDialog(null, Configs.criticalError);
                     System.exit(1);
                 }
+
+                lblHost.setText(Configs.hostname);
+                lblIP.setText("");
+                txtLog.setText("");
+
+                cmdDoUpdate.setEnabled(true);
+
+                log("Initialization OK.");
+
+                checkIt();
 
             }
         });
@@ -133,13 +93,9 @@ public class JMain extends javax.swing.JDialog implements INoipStatusListener {
     }
 
     @Override
-    public void setNoipStatus(Object status) {
-
-        if (status instanceof NoipStatusCurrentIP) {
-            final NoipStatusCurrentIP st = (NoipStatusCurrentIP) status;
-            lblIP.setText(st.getIp());
-
-        } else if (status instanceof NoipStatusFailedUpdate) {
+    public void setNoipStatus(INoipStatus status) {
+        
+        if (status instanceof NoipStatusFailedUpdate) {
             final NoipStatusFailedUpdate st = (NoipStatusFailedUpdate) status;
 
             if (st.getError() != null) {
@@ -147,7 +103,7 @@ public class JMain extends javax.swing.JDialog implements INoipStatusListener {
             }
 
             if (st.getNextUpdate() != null) {
-                lblNextUpdate.setText(formatearFechaHora2(st.getNextUpdate()));
+                lblNextUpdate.setText(DateTools.formatearFechaHora2(st.getNextUpdate()));
             }
 
             changeTimerDelay(Configs.updatetime_fail);
@@ -159,16 +115,32 @@ public class JMain extends javax.swing.JDialog implements INoipStatusListener {
                 lblIP.setText(st.getIp());
             }
 
-            lblUpdated.setText(formatearFechaHora2(st.getUpdated()));
-            lblNextUpdate.setText(formatearFechaHora2(st.getNextUpdate()));
+            lblUpdated.setText(DateTools.formatearFechaHora2(st.getUpdated()));
+            lblNextUpdate.setText(DateTools.formatearFechaHora2(st.getNextUpdate()));
 
             if (st.getMessage() != null) {
                 log(st.getMessage());
             }
 
             changeTimerDelay(Configs.updatetime_ok);
+
+        } else if (status instanceof NoipStatusNochange) {
+            final NoipStatusNochange st = (NoipStatusNochange) status;
+
+            if (st.getIp() != null) {
+                lblIP.setText(st.getIp());
+            }
+
+            lblNextUpdate.setText(DateTools.formatearFechaHora2(st.getNextUpdate()));
+
+            if (!(lastStatus instanceof NoipStatusNochange)) {
+                log("No changed, until further notice.");
+            }
+
+            changeTimerDelay(Configs.updatetime_ok);
         }
 
+        lastStatus = status;
         cmdDoUpdate.setEnabled(true);
     }
 
@@ -186,7 +158,7 @@ public class JMain extends javax.swing.JDialog implements INoipStatusListener {
     }
 
     private void log(String str) {
-        txtLog.append("[" + millisToHHmmss(new Date()) + "] " + str + "\n");
+        txtLog.append("[" + DateTools.millisToHHmmss(new Date()) + "] " + str + "\n");
         txtLog.setCaretPosition(txtLog.getText().length());
     }
 
@@ -329,42 +301,6 @@ public class JMain extends javax.swing.JDialog implements INoipStatusListener {
     private void lblExitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblExitMouseClicked
         System.exit(0);
     }//GEN-LAST:event_lblExitMouseClicked
-
-    private String getMyPath() {
-
-        String ret = JMain.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-
-        if (!ret.equals("/")) {
-            final String[] splited = ret.split("/");
-
-            ret = "";
-
-            for (int i = 0; i < (splited.length - 1); i++) {
-                ret = ret + splited[i] + "/";
-            }
-
-        }
-
-        return ret;
-    }
-
-    public static String millisToHHmmss(final Date date) {
-        try {
-            final DateFormat df = new SimpleDateFormat("HH:mm:ss");
-            return df.format(date);
-        } catch (Exception e) {
-            return "?";
-        }
-    }
-
-    public static String formatearFechaHora2(final Date date) {
-        try {
-            final DateFormat df = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-            return df.format(date);
-        } catch (Exception e) {
-            return "?";
-        }
-    }
 
     private void setComportamientoToTray() {
 

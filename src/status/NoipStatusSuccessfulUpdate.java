@@ -11,7 +11,7 @@ import java.util.Date;
  *
  * @author diego
  */
-public class NoipStatusSuccessfulUpdate {
+public class NoipStatusSuccessfulUpdate implements INoipStatus {
 
     private String ip = null;
     private Date updated = null;

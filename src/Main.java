@@ -1,7 +1,9 @@
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import javax.swing.JOptionPane;
 
 
 /*
@@ -18,12 +20,39 @@ public class Main {
     public static void main(String[] args) throws UnsupportedEncodingException, MalformedURLException, IOException {
 
         boolean iconified = false;
+        boolean server = false;
 
+        // Reading parameters / arguments.
         if (args != null && args.length > 0) {
-            iconified = args[0].equalsIgnoreCase("m");
+
+            for (final String arg : args) {
+
+                if (arg.equalsIgnoreCase("m")) {
+                    iconified = true;
+                }
+
+                if (arg.equalsIgnoreCase("s")) {
+                    server = true;
+                }
+
+            }
+
         }
 
-        final JMain win = new JMain(iconified);
+        // Reading de initial configurations.
+        try {
+            final File configFile = new File(ReadWriteTextFile.getMyPath() + "/config.cfg");
+            Configs.readConfigs(configFile);
+        } catch (Exception ex) {
+            Configs.criticalError = ex.getMessage();
+        }
+
+        // Starting...
+        if (server) {
+            final JServer srv = new JServer();
+        } else {
+            final JMain win = new JMain(iconified);
+        }
 
     }
 
